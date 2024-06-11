@@ -3,11 +3,14 @@ if [ -d "/etc/ddos-guardian" ]; then
     exit 1
 fi
 
-mkdir /etc/ddos-guardian
+cd /etc/
 
-cd /etc/ddos-guardian
+apt update
 
 git clone https://github.com/xlelord9292/ddos-guardian .
+curl -Lo ddos-guardian.tar.gz https://github.com/DDOS-Guardian/DDoS-Guardian/releases/latest/download/ddos-guardian.tar.gz
+tar -xzvf ddos-guardian.tar.gz
+rm ddos-guardian.tar.gz
 
 if ! command -v node &> /dev/null; then
     curl -sL https://deb.nodesource.com/setup_14.x | bash -
@@ -15,9 +18,6 @@ if ! command -v node &> /dev/null; then
 fi
 
 npm install
-
-apt update
-apt upgrade -y
 
 cat <<EOF > /etc/systemd/system/guardian.service
 [Unit]
