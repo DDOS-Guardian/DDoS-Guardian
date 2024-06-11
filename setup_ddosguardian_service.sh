@@ -8,8 +8,9 @@ fi
 confirm_installation() {
     local answer
     read -p "Are you sure you want to install DDoS Guardian? (yes/no): " answer </dev/tty
-    answer=${answer:-no}  # Default to "no" if no input is provided
-    if [ "$answer" = "yes" ]; then
+    answer=${answer,,}
+    answer=${answer:-no}
+    if [ "$answer" = "yes" ] || [ "$answer" = "y" ]; then
         echo "Installing DDoS Guardian..."
         install_ddos_guardian
     else
@@ -24,14 +25,13 @@ install_ddos_guardian() {
     
     apt update
     
-    git clone https://github.com/xlelord9292/ddos-guardian .
     curl -Lo ddos-guardian.tar.gz https://github.com/DDOS-Guardian/DDoS-Guardian/releases/latest/download/ddos-guardian.tar.gz
     tar -xzvf ddos-guardian.tar.gz
     rm ddos-guardian.tar.gz
     
     if ! command -v node &> /dev/null; then
-        curl -sL https://deb.nodesource.com/setup_14.x | bash -
-        apt install -y nodejs
+        echo "Please install NodeJS!"
+        exit 1
     fi
     
     npm install
