@@ -26,7 +26,7 @@ sudo apt install -y nodejs npm nginx
 ## How To Install
 First, Install and run the install script:
 ```sh
-curl -Lo setup_ddosguardian_service.sh https://raw.githubusercontent.com/DDOS-Guardian/DDoS-Guardian/main/setup_ddosguardian_service.sh | sudo bash
+sudo curl -sSL https://raw.githubusercontent.com/DDOS-Guardian/DDoS-Guardian/main/setup_ddosguardian_service.sh | sudo bash
 ```
 
 ## Configuration
