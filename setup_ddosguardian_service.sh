@@ -1,5 +1,18 @@
+#!/bin/bash
+
 if [ -d "/etc/ddos-guardian" ]; then
-    echo "Directory /etc/ddos-guardian already exists."
+    echo "Directory /etc/ddos-guardian is already installed..."
+    exit 1
+fi
+
+echo "Are you sure you want to install DDoS Guardian? (yes/no)"
+read answer
+
+if [ "$answer" = "yes" ]; then
+    echo "Installing DDoS Guardian..."
+    # Add your installation commands here
+else
+    echo "Installation canceled."
     exit 1
 fi
 
