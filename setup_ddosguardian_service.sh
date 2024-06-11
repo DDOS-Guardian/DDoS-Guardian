@@ -24,9 +24,12 @@ install_ddos_guardian() {
     cd /etc/
     
     apt update
+
+    mkdir ddos-guardian
+    cd ddos-guardian
     
     curl -Lo ddos-guardian.tar.gz https://github.com/DDOS-Guardian/DDoS-Guardian/releases/latest/download/ddos-guardian.tar.gz
-    tar -xzvf ddos-guardian.tar.gz
+    tar -xvzf ddos-guardian.tar.gz
     rm ddos-guardian.tar.gz
     
     if ! command -v node &> /dev/null; then
