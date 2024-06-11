@@ -5,16 +5,18 @@ if [ -d "/etc/ddos-guardian" ]; then
     exit 1
 fi
 
-echo "Are you sure you want to install DDoS Guardian? (yes/no)"
-read answer
-
-if [ "$answer" = "yes" ]; then
-    echo "Installing DDoS Guardian..."
-    install_ddos_guardian
-else
-    echo "Installation canceled."
-    exit 1
-fi
+confirm_installation() {
+    local answer
+    read -p "Are you sure you want to install DDoS Guardian? (yes/no): " answer </dev/tty
+    answer=${answer:-no}  # Default to "no" if no input is provided
+    if [ "$answer" = "yes" ]; then
+        echo "Installing DDoS Guardian..."
+        install_ddos_guardian
+    else
+        echo "Installation canceled."
+        exit 1
+    fi
+}
 
 install_ddos_guardian() {
     
@@ -99,3 +101,5 @@ install_ddos_guardian() {
     
     echo "DDoS Guardian setup complete."
 }
+
+confirm_installation
