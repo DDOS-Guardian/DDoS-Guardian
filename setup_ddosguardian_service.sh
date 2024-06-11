@@ -98,7 +98,8 @@ EOF
     
     
     cd /etc/nginx/conf.d/
-    git clone https://github.com/xlelord9292/ddos-guardian-layer-7
+
+    curl -Lo protection.lua https://raw.githubusercontent.com/DDOS-Guardian/DDoS-Guardian-Layer-7/main/protection.lua
     
     sudo apt-get install libnginx-mod-http-lua
     
