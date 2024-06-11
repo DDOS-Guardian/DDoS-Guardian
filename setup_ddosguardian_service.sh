@@ -36,24 +36,24 @@ install_ddos_guardian() {
     
     npm install
     
-    cat <<EOF > /etc/systemd/system/guardian.service
-    [Unit]
-    Description=DDoS Guardian Service
-    After=network.target
-    
-    [Service]
-    Type=simple
-    User=root
-    WorkingDirectory=/etc/ddos-guardian
-    ExecStart=/usr/bin/node /etc/ddos-guardian/attacks.js
-    Restart=always
-    StandardOutput=syslog
-    StandardError=syslog
-    
-    [Install]
-    WantedBy=multi-user.target
-    EOF
-    
+cat <<EOF > /etc/systemd/system/guardian.service
+[Unit]
+Description=DDoS Guardian Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/etc/ddos-guardian
+ExecStart=/usr/bin/node /etc/ddos-guardian/attacks.js
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
     systemctl daemon-reload
     
     systemctl enable guardian
