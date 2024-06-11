@@ -20,12 +20,14 @@ You need the following,
 Please run the below to install Node JS and Nginx:
 ```sh
 sudo apt update
-sudo apt install -y nodejs npm nginx```
+sudo apt install -y nodejs npm nginx
+```
 
 ## How To Install
 First, Install and run the install script:
 ```sh
-curl -Lo setup_ddosguardian_service.sh https://raw.githubusercontent.com/DDOS-Guardian/DDoS-Guardian/main/setup_ddosguardian_service.sh | sudo bash```
+curl -Lo setup_ddosguardian_service.sh https://raw.githubusercontent.com/DDOS-Guardian/DDoS-Guardian/main/setup_ddosguardian_service.sh | sudo bash
+```
 
 ## Configuration
 If you would like to configure DDoS Guardian, Edit ``/etc/ddosguardian/.env``. You may use ``nano /etc/ddosguardian/.env`` to edit it!
