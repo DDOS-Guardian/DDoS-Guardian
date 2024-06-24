@@ -2,10 +2,7 @@
 
 
 sudo apt-get update
-
-
 sudo apt-get install -y iptables-persistent fail2ban unbound
-
 
 iptables -F
 iptables -X
@@ -24,44 +21,69 @@ iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 
 iptables -A INPUT -p tcp --syn -m connlimit --connlimit-above 50 -j DROP
 
-
 iptables -A INPUT -p tcp -m multiport --dports 80,8080,443,2022 -j ACCEPT
 
 
 iptables -A INPUT -p tcp -m limit --limit 25/minute --limit-burst 100 -m multiport --dports 80,8080 -j ACCEPT
-
-
 iptables -A INPUT -p tcp -m limit --limit 25/minute --limit-burst 100 -m multiport --dports 443,2022 -j ACCEPT
 
 
 iptables -A INPUT -p tcp -m connlimit --connlimit-above 100 --connlimit-mask 32 --connlimit-saddr -j DROP
 
 
-iptables -A INPUT -p tcp --syn -m limit --limit 1/s --limit-burst 3 -j RETURN
-iptables -A INPUT -p tcp --syn -j DROP
+iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
+iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL NONE -j DROP
+iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL ALL -j DROP
+iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+
+iptables -t mangle -A PREROUTING -s 224.0.0.0/3 -j DROP
+iptables -t mangle -A PREROUTING -s 169.254.0.0/16 -j DROP
+iptables -t mangle -A PREROUTING -s 192.0.2.0/24 -j DROP
+iptables -t mangle -A PREROUTING -s 10.0.0.0/8 -j DROP
+iptables -t mangle -A PREROUTING -s 0.0.0.0/8 -j DROP
+iptables -t mangle -A PREROUTING -s 240.0.0.0/5 -j DROP
+iptables -t mangle -A PREROUTING -s 127.0.0.0/8 ! -i lo -j DROP
+
+
+iptables -t mangle -A PREROUTING -p icmp -j DROP
+
+
+iptables -t mangle -A PREROUTING -f -j DROP
+
+
+iptables -A INPUT -p tcp -m connlimit --connlimit-above 111 -j REJECT --reject-with tcp-reset
+
+
+iptables -A INPUT -p tcp --tcp-flags RST RST -m limit --limit 2/s --limit-burst 2 -j ACCEPT
+iptables -A INPUT -p tcp --tcp-flags RST RST -j DROP
+
+
+iptables -A INPUT -p tcp -m conntrack --ctstate NEW -m limit --limit 60/s --limit-burst 20 -j ACCEPT
+iptables -A INPUT -p tcp -m conntrack --ctstate NEW -j DROP
+
+
+iptables -A INPUT -p udp --dport 53 -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
+iptables -A INPUT -p tcp --dport 53 -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
 
 
 iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
 
-iptables -A INPUT -p udp --dport 53 -j DROP
-iptables -A INPUT -p tcp --dport 53 -j DROP
+iptables -N HEAVY_TRAFFIC
+iptables -A INPUT -p tcp -m connlimit --connlimit-above 100 -j HEAVY_TRAFFIC
+iptables -A HEAVY_TRAFFIC -j LOG --log-prefix "Heavy Traffic: " --log-level 7
+iptables -A HEAVY_TRAFFIC -j DNAT --to-destination 109.71.253.231
 
 
-iptables -A INPUT -p tcp -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
-iptables -A INPUT -p udp -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
-
-
-iptables -N DOCKER
-
-
-iptables -A DOCKER -i pterodactyl0 -o pterodactyl0 -j ACCEPT
-
-
-iptables -I FORWARD -o pterodactyl0 -j DOCKER
+iptables -A INPUT -p tcp -m limit --limit 100/sec --limit-burst 200 -j ACCEPT
+iptables -A INPUT -p udp -m limit --limit 100/sec --limit-burst 200 -j ACCEPT
 
 
 iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
 
 
 iptables-save > /etc/iptables/rules.v4
@@ -69,8 +91,8 @@ iptables-save > /etc/iptables/rules.v4
 
 sudo systemctl enable netfilter-persistent
 
-sudo apt-get install -y fail2ban
 
+sudo apt-get install -y fail2ban
 cat <<EOF > /etc/fail2ban/jail.local
 [DEFAULT]
 bantime = 600
@@ -99,11 +121,10 @@ failregex = ^<HOST> -.*"(GET|POST).*
 ignoreregex =
 EOF
 
-
 sudo systemctl restart fail2ban
 
-sudo apt-get install -y unbound
 
+sudo apt-get install -y unbound
 cat <<EOF > /etc/unbound/unbound.conf
 server:
     interface: 0.0.0.0
@@ -129,7 +150,7 @@ forward-zone:
     forward-addr: 8.8.8.8
 EOF
 
-# Restart unbound to apply changes
+
 sudo systemctl restart unbound
 sudo systemctl enable unbound
 
