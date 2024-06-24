@@ -19,6 +19,8 @@ iptables -A INPUT -p tcp --dport 22 -m recent --name sshbrute --update --seconds
 iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 
 
+
+
 iptables -A INPUT -p tcp --syn -m connlimit --connlimit-above 50 -j DROP
 
 iptables -A INPUT -p tcp -m multiport --dports 80,8080,443,2022 -j ACCEPT
@@ -29,6 +31,25 @@ iptables -A INPUT -p tcp -m limit --limit 25/minute --limit-burst 100 -m multipo
 
 
 iptables -A INPUT -p tcp -m connlimit --connlimit-above 100 --connlimit-mask 32 --connlimit-saddr -j DROP
+
+iptables -A INPUT -i pterodactyl0 -j ACCEPT
+iptables -A FORWARD -o pterodactyl0 -j ACCEPT
+iptables -A FORWARD -i pterodactyl0 -j ACCEPT
+iptables -A INPUT -i docker0 -j ACCEPT
+iptables -A FORWARD -o docker0 -j ACCEPT
+iptables -A FORWARD -i docker0 -j ACCEPT
+
+
+
+iptables -A INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT
+
+
+iptables -A INPUT -p tcp --dport 25565 -m conntrack --ctstate NEW -j ACCEPT
+
+
+iptables -A INPUT -p tcp --dport 2375 -j ACCEPT
+iptables -A INPUT -p tcp --dport 2376 -j ACCEPT
+iptables -A INPUT -p tcp --dport 8443 -j ACCEPT
 
 
 iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
@@ -87,6 +108,7 @@ iptables -P OUTPUT ACCEPT
 
 
 iptables-save > /etc/iptables/rules.v4
+
 
 
 sudo systemctl enable netfilter-persistent
@@ -153,5 +175,6 @@ EOF
 
 sudo systemctl restart unbound
 sudo systemctl enable unbound
+systemctl restart docker
 
 echo "Firewall has been organized and is now enabled, powered by DDOS Guardian."
