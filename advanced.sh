@@ -1,112 +1,52 @@
 #!/bin/bash
 
-
+# Initial system update and package installation
 sudo apt-get update
 sudo apt-get install -y iptables-persistent fail2ban unbound
 
+# Flush existing iptables rules
 iptables -F
 iptables -X
 
+# Accept all traffic from whitelisted IP to bypass further checks
+iptables -A INPUT -s 109.71.253.231 -j ACCEPT
 
+# Basic rules for loopback and established connections
 iptables -A INPUT -i lo -j ACCEPT
-
 iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-
+# SSH connection rate limiting to protect against brute-force attacks
 iptables -A INPUT -p tcp --dport 22 -m connlimit --connlimit-above 3 -j REJECT --reject-with tcp-reset
 iptables -A INPUT -p tcp --dport 22 -m recent --name sshbrute --set
 iptables -A INPUT -p tcp --dport 22 -m recent --name sshbrute --update --seconds 300 --hitcount 4 -j DROP
 iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 
-
-
-
-iptables -A INPUT -p tcp --syn -m connlimit --connlimit-above 50 -j DROP
-
+# General rules for accepting HTTP(S) and other specified traffic
 iptables -A INPUT -p tcp -m multiport --dports 80,8080,443,2022 -j ACCEPT
 
+# Detect heavy traffic and redirect it
+iptables -N SUSPICIOUS_TRAFFIC
+iptables -A INPUT -p tcp -m connlimit --connlimit-above 100 -j SUSPICIOUS_TRAFFIC
+iptables -A SUSPICIOUS_TRAFFIC -j LOG --log-prefix "Suspicious Traffic: " --log-level 7
+iptables -A SUSPICIOUS_TRAFFIC -j DNAT --to-destination 109.71.253.231
 
-iptables -A INPUT -p tcp -m limit --limit 25/minute --limit-burst 100 -m multiport --dports 80,8080 -j ACCEPT
-iptables -A INPUT -p tcp -m limit --limit 25/minute --limit-burst 100 -m multiport --dports 443,2022 -j ACCEPT
-
-
-iptables -A INPUT -p tcp -m connlimit --connlimit-above 100 --connlimit-mask 32 --connlimit-saddr -j DROP
-
-iptables -A INPUT -i pterodactyl0 -j ACCEPT
-iptables -A FORWARD -o pterodactyl0 -j ACCEPT
-iptables -A FORWARD -i pterodactyl0 -j ACCEPT
-iptables -A INPUT -i docker0 -j ACCEPT
-iptables -A FORWARD -o docker0 -j ACCEPT
-iptables -A FORWARD -i docker0 -j ACCEPT
-
-
-
-iptables -A INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT
-
-
-iptables -A INPUT -p tcp --dport 25565 -m conntrack --ctstate NEW -j ACCEPT
-
-
-iptables -A INPUT -p tcp --dport 2375 -j ACCEPT
-iptables -A INPUT -p tcp --dport 2376 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8443 -j ACCEPT
-
-
-iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
-iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL NONE -j DROP
-iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL ALL -j DROP
-iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
-iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
-
-
-iptables -t mangle -A PREROUTING -s 224.0.0.0/3 -j DROP
-iptables -t mangle -A PREROUTING -s 169.254.0.0/16 -j DROP
-iptables -t mangle -A PREROUTING -s 192.0.2.0/24 -j DROP
-iptables -t mangle -A PREROUTING -s 10.0.0.0/8 -j DROP
-iptables -t mangle -A PREROUTING -s 0.0.0.0/8 -j DROP
-iptables -t mangle -A PREROUTING -s 240.0.0.0/5 -j DROP
-iptables -t mangle -A PREROUTING -s 127.0.0.0/8 ! -i lo -j DROP
-
-
-iptables -t mangle -A PREROUTING -p icmp -j DROP
-
-
-iptables -t mangle -A PREROUTING -f -j DROP
-
-
-iptables -A INPUT -p tcp -m connlimit --connlimit-above 111 -j REJECT --reject-with tcp-reset
-
-
-iptables -A INPUT -p tcp --tcp-flags RST RST -m limit --limit 2/s --limit-burst 2 -j ACCEPT
-iptables -A INPUT -p tcp --tcp-flags RST RST -j DROP
-
-
+# Allow and log all new incoming traffic, monitoring for heavy loads
 iptables -A INPUT -p tcp -m conntrack --ctstate NEW -m limit --limit 60/s --limit-burst 20 -j ACCEPT
-iptables -A INPUT -p tcp -m conntrack --ctstate NEW -j DROP
+iptables -A INPUT -p tcp -m conntrack --ctstate NEW -j LOG --log-prefix "New Connection: " --log-level 7
 
-
+# Accept DNS traffic
 iptables -A INPUT -p udp --dport 53 -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
 iptables -A INPUT -p tcp --dport 53 -m limit --limit 10/sec --limit-burst 20 -j ACCEPT
 
-
+# Drop invalid packets
 iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
-
-iptables -N HEAVY_TRAFFIC
-iptables -A INPUT -p tcp -m connlimit --connlimit-above 100 -j HEAVY_TRAFFIC
-iptables -A HEAVY_TRAFFIC -j LOG --log-prefix "Heavy Traffic: " --log-level 7
-iptables -A HEAVY_TRAFFIC -j DNAT --to-destination 109.71.253.231
-
-
-iptables -A INPUT -p tcp -m limit --limit 100/sec --limit-burst 200 -j ACCEPT
-iptables -A INPUT -p udp -m limit --limit 100/sec --limit-burst 200 -j ACCEPT
-
-
-iptables -P INPUT DROP
+# Default policy: accept all other traffic
+iptables -P INPUT ACCEPT
 iptables -P FORWARD DROP
 iptables -P OUTPUT ACCEPT
 
-
+# Save the iptables configuration
 iptables-save > /etc/iptables/rules.v4
 
 
