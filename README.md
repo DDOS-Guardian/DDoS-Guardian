@@ -1,5 +1,5 @@
 # DDoS Guardian
-To View Our Docs To Explain Stuff Please Head Over to https://ddosguardian.xyz for more information regarding this Company!
+To View Our Docs To Explain Stuff Please Head Over to https://ddos-guardian.xyz for more information regarding this Company!
 
 ### Key Features
 - WAF
